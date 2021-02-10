@@ -16,10 +16,8 @@ public final class Utils {
      */
     public static byte[] BuildSelectApdu(String aid) {
         // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
-        // return HexStringToByteArray(SELECT_APDU_HEADER + String.format("%02X", aid.length() / 2)
-        // + aid);
-        // TODO: the above format is the one we want to use, but for some reason isn't working
-        return HexStringToByteArray(SELECT_APDU_HEADER + aid);
+        return HexStringToByteArray(
+                SELECT_APDU_HEADER + String.format("%02X", aid.length() / 2) + aid);
     }
 
     /**
