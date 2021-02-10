@@ -18,7 +18,7 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
    private static final String TAG = "SmartCardReader";
 
    // AID for our loyalty card service.
-   private static final String SAMPLE_CARD_AID = "07A0000002471001";
+   private static final String AID = "A0000002471001";
 
    // Recommend NfcAdapter flags for reading from other Android devices. Indicates that this
    // activity is interested in NFC-A devices (including other Android devices), and that the
@@ -65,7 +65,7 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
          isoDep.connect();
 
          // Build and send the command
-         final byte[] response = isoDep.transceive(Utils.BuildSelectApdu(SAMPLE_CARD_AID));
+         final byte[] response = isoDep.transceive(Utils.BuildSelectApdu(AID));
 
          // If AID is successfully selected, 0x9000 is returned as the status word (last 2
          // bytes of the result) by convention. Everything before the status word is
