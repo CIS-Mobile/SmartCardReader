@@ -12,7 +12,14 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.securespaces.android.securemode.ResponseCode;
+import com.securespaces.android.securemode.ResponseStatusInfo;
+import com.securespaces.android.ssm.SpacesManager;
+
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 
 public final class MainActivity extends AppCompatActivity implements ReaderCallback {
@@ -28,6 +35,7 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
            NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
 
    private NfcAdapter nfcAdapter;
+   private SpacesManager spacesManager;
 
    protected void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
@@ -78,7 +86,14 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
          // If the response code is OK, display the code and the message (payload)
          if (Arrays.equals(Utils.SELECT_OK_SW, statusWord)) {
             final StringBuilder responseText = (new StringBuilder()).append("\nCard Response: " + Utils.ByteArrayToHexString(statusWord));
-            responseText.append("\nCard Value: " + Utils.ByteArrayToHexString(payload));
+            // Decrypt the message
+            ResponseCode encryptedResponse = convertResponse(new String(payload, "UTF-8"));
+            String certPem = encryptedResponse.getCertificate();
+            String signature = encryptedResponse.getSignature();
+            String message = encryptedResponse.getSigningMessage();
+            String status = spacesManager.verifyMessage(message, signature, certPem);
+            responseText.append("\nCard Status: " + status);
+            responseText.append("\nCard Value: " + new String(payload, "UTF-8"));
             runOnUiThread(new Runnable() {
                @Override
                public void run() {
@@ -92,6 +107,14 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
          isoDep.close();
       } catch (IOException e) {
          Log.e(TAG, "Error communicating with card: " + e.toString());
+      } catch (NullPointerException e1) {
+         Log.e(TAG, "Error decrypting data: " + e1.toString());
       }
+   }
+
+   private ResponseCode convertResponse(String jsonStr) {
+      Gson gson = new Gson();
+      Type typeResponseCode = new TypeToken<ResponseCode>() {}.getType();
+      return gson.fromJson(jsonStr, typeResponseCode);
    }
 }
