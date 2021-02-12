@@ -41,6 +41,7 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
       super.onCreate(savedInstanceState);
       this.setContentView(R.layout.activity_main);
       this.nfcAdapter = NfcAdapter.getDefaultAdapter((Context)this);
+      this.spacesManager = new SpacesManager((Context)this);
    }
 
    public void onResume() {
@@ -69,6 +70,8 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
    @Override
    public void onTagDiscovered(Tag tag) {
       IsoDep isoDep = IsoDep.get(tag);
+      final StringBuilder responseText = new StringBuilder();
+      responseText.append("Card Reader");
       try {
          // Connect to the remote NFC device
          isoDep.connect();
@@ -85,36 +88,54 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
 
          // If the response code is OK, display the code and the message (payload)
          if (Arrays.equals(Utils.SELECT_OK_SW, statusWord)) {
-            final StringBuilder responseText = (new StringBuilder()).append("\nCard Response: " + Utils.ByteArrayToHexString(statusWord));
+            String payloadString = new String(payload, "UTF-8");
+            responseText.append("\nCard Response: " + Utils.ByteArrayToHexString(statusWord));
+            responseText.append("\nCard Value: " + payloadString);
             // Decrypt the message
-            ResponseCode encryptedResponse = convertResponse(new String(payload, "UTF-8"));
-            String certPem = encryptedResponse.getCertificate();
-            String signature = encryptedResponse.getSignature();
-            String message = encryptedResponse.getSigningMessage();
-            String status = spacesManager.verifyMessage(message, signature, certPem);
-            responseText.append("\nCard Status: " + status);
-            responseText.append("\nCard Value: " + new String(payload, "UTF-8"));
-            runOnUiThread(new Runnable() {
-               @Override
-               public void run() {
-                  // Stuff that updates the UI and shows the response code
-                  TextView textView = (TextView) findViewById(R.id.textView);
-                  textView.setText(responseText); //set text for text view
+            try {
+//               ResponseCode encryptedResponse = convertResponse(new String(payload, "UTF-8"));
+//               ResponseStatus responseStatus = new ResponseStatus();
+               ResponseStatusInfo responseInfo = getResponseInfo(payloadString);
+//               responseText.append("\nCard Status: " + message);
+               if (responseInfo.errorType.toLowerCase().equals("success")) {
+                  responseText.append("\nCard Status: success");
+               } else {
+                  responseText.append("\nCard Status: failed");
                }
-            });
+            } catch (NullPointerException e1) {
+               Log.e(TAG, "Error decrypting data: " + e1.toString());
+               responseText.append("\nCard decryption failed");
+            }
          }
          // Close the NFC connection
          isoDep.close();
       } catch (IOException e) {
          Log.e(TAG, "Error communicating with card: " + e.toString());
-      } catch (NullPointerException e1) {
-         Log.e(TAG, "Error decrypting data: " + e1.toString());
+//      } catch (NullPointerException e1) {
+//         Log.e(TAG, "Error decrypting data: " + e1.toString());
       }
+      runOnUiThread(new Runnable() {
+         @Override
+         public void run() {
+            // Stuff that updates the UI and shows the response code
+            TextView textView = (TextView) findViewById(R.id.textView);
+            textView.setText(responseText); //set text for text view
+         }
+      });
    }
 
-   private ResponseCode convertResponse(String jsonStr) {
+   private ResponseStatusInfo getResponseInfo(String jsonStr) {
       Gson gson = new Gson();
       Type typeResponseCode = new TypeToken<ResponseCode>() {}.getType();
-      return gson.fromJson(jsonStr, typeResponseCode);
+      ResponseCode encryptedResponse = gson.fromJson(jsonStr, typeResponseCode);
+      String certPem = encryptedResponse.getCertificate();
+      Log.d(TAG, "certPem: " + certPem);
+      String signature = encryptedResponse.getSignature();
+      Log.d(TAG, "signature: " + signature);
+      String signingMessage = encryptedResponse.getSigningMessage();
+      Log.d(TAG, "signingMessage: " + signingMessage);
+      String message = spacesManager.verifyMessage(signingMessage, signature, certPem);
+      ResponseStatusInfo /*<?>*/ responseStatusInfo = gson.fromJson(message, ResponseStatusInfo.class);
+      return responseStatusInfo; //gson.fromJson<ResponseStatusInfo>(message, ResponseStatusInfo.class);
    }
 }
