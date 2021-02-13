@@ -3,7 +3,7 @@ ifeq ($(BUILD_AS_GUARD_PHONE), true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-LOCAL_SRC_FILES := $(call all-java-files-under, src)
+LOCAL_SRC_FILES := $(call all-java-files-under, app/src)
 
 LOCAL_MODULE_TAGS := optional
 
@@ -22,9 +22,9 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
     libsscm \
     gson
 
-LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/src/main/res
+LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/app/src/main/res
 
-LOCAL_MANIFEST_FILE := src/main/AndroidManifest.xml
+LOCAL_MANIFEST_FILE := app/src/main/AndroidManifest.xml
 
 LOCAL_USE_AAPT2 := true
 
