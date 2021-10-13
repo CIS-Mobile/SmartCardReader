@@ -4,6 +4,8 @@ public final class Utils {
    // ISO-DEP command HEADER for selecting an AID.
    // Format: [Class | Instruction | Parameter 1 | Parameter 2]
    private static final String SELECT_APDU_HEADER = "00A40400";
+   // ISO-DEP command HEADER for getting data
+   private static final String GET_DATA_APDU_HEADER = "00CB0000";
    // "OK" status word sent in response to SELECT AID command (0x9000)
    protected static final byte[] SELECT_OK_SW = {(byte) 0x90, (byte) 0x00};
 
@@ -17,6 +19,29 @@ public final class Utils {
    public static byte[] BuildSelectApdu(String aid) {
       // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
       return HexStringToByteArray(SELECT_APDU_HEADER + String.format("%02X", aid.length() / 2) + aid);
+   }
+
+   /**
+    * Build APDU for given command. This command indicates which service a reader is
+    * interested in communicating with. See ISO 7816-4.
+    *
+    * @param data data to send after the APDU header (in hex string format)
+    * @return APDU for given command
+    */
+   public static byte[] BuildGetDataApdu(String data) {
+      // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
+      return HexStringToByteArray(GET_DATA_APDU_HEADER + String.format("%02X", data.length() / 2) + data);
+   }
+
+   /**
+    * Build APDU for given command. This command indicates which service a reader is
+    * interested in communicating with. See ISO 7816-4.
+    *
+    * @return APDU for get data command
+    */
+   public static byte[] BuildGetDataApdu() {
+      // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
+      return HexStringToByteArray(GET_DATA_APDU_HEADER);
    }
 
    /**

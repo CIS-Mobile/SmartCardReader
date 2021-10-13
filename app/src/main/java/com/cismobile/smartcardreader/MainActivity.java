@@ -64,7 +64,7 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
          // Connect to the remote NFC device
          isoDep.connect();
 
-         // Build and send the command
+         // Build and send the select command
          final byte[] response = isoDep.transceive(Utils.BuildSelectApdu(AID));
 
          // If AID is successfully selected, 0x9000 is returned as the status word (last 2
@@ -76,8 +76,21 @@ public final class MainActivity extends AppCompatActivity implements ReaderCallb
 
          // If the response code is OK, display the code and the message (payload)
          if (Arrays.equals(Utils.SELECT_OK_SW, statusWord)) {
-            final StringBuilder responseText = (new StringBuilder()).append("\nCard Response: " + Utils.ByteArrayToHexString(statusWord));
-            responseText.append("\nCard Value: " + Utils.ByteArrayToHexString(payload));
+            final StringBuilder responseText = (new StringBuilder()).append("\nSelect Card Response: " + Utils.ByteArrayToHexString(statusWord));
+            responseText.append("\nSelect Card Value: " + new String(payload, "UTF-8"));
+
+            // Build and send the get data command
+            final byte[] newResponse = isoDep.transceive(Utils.BuildGetDataApdu());
+
+            resultLength = newResponse.length;
+            statusWord = new byte[]{newResponse[resultLength - 2], newResponse[resultLength - 1]};
+            payload = Arrays.copyOf(newResponse, resultLength-2);
+
+            if (Arrays.equals(Utils.SELECT_OK_SW, statusWord)) {
+               responseText.append("\nGet Data Card Response: " + Utils.ByteArrayToHexString(statusWord));
+               responseText.append("\nGet Data Card Value: " + new String(payload, "UTF-8"));
+            }
+
             runOnUiThread(new Runnable() {
                @Override
                public void run() {
